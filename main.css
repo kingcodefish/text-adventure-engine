@@ -1,0 +1,21 @@
+.tae-header {
+    width: 100%;
+    background-color: #6f9dee;
+    font-size: 25px;
+    font-family: "Roboto", arial;
+    padding: 10px 0 10px 10px;
+    color: white;
+}
+.tae-body {
+    width: 70%;
+    float: left;
+}
+.tae-input {
+    width: 100%;
+    border: 2px inset #EEEEEE;
+}
+.tae-menu {
+    width: 30%;
+    float: right;
+    display: inline-block;
+}
