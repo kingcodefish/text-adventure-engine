@@ -1,3 +1,14 @@
+* {
+    box-sizing: border-box;
+}
+h1, h2, h3, h4, h5, h6, p {
+    margin: 0;
+    font-family: "Open Sans", sans-serif;
+}
+p {
+    font-size: 15px;
+    margin: 0 0 5px 0;
+}
 .tae-header {
     width: 100%;
     background-color: #6f9dee;
@@ -15,10 +26,39 @@
 .tae-input {
     width: 100%;
     border: 2px inset #EEEEEE;
-    /*margin: 10px 0 5px 5px;*/
 }
 .tae-menu {
-    width: 30%;
+    width: 29.4%;
     float: right;
     display: inline-block;
+    margin-left: 5px;
+    margin-top: 2px;
+}
+.tae-menu > div {
+    background: #FFFFFF;
+    border: 2px solid #ffd6b9;
+    border-radius: 10px;
+    padding: 5px 0 5px 8px;
+    margin-bottom: 2px;
+}
+.tae-menu .arrow {
+    float: right;
+    display: inline-block;
+    width: 0;
+    position: relative;
+    bottom: 15px;
+    right: 10px;
+    border-top: 6px solid transparent;
+    border-right: 8px solid #000;
+    border-bottom: 6px solid transparent;
+    transition: 0.2s ease transform;
+}
+.tae-menu .active .arrow {
+    transform: rotate(-90deg);
+}
+.tae-menu h3 {
+    font-size: 15px;
+}
+.tae-menu-wrapper {
+    display: none;
 }
