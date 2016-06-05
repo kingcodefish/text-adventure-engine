@@ -23,6 +23,18 @@ p {
     background-color: #FFE4C4;
     padding: 5px;
 }
+.tae-output-title, .tae-output-subtitle {
+    font-family: "Roboto", sans-serif;
+    font-size: 1.3em;
+    text-align: center;
+    margin: 10px 0;
+}
+.tae-output-title {
+    font-size: 2.5em;
+}
+.tae-output-subtitle {
+    color: #777;
+}
 .tae-output pre {
     color: #A09469;
     font-size: 15px;
