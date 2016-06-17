@@ -1,3 +1,4 @@
+// Hardcore JS Activate! :P
 "use strict";
 
 /** --- CANVAS ENVIRONMENT VARIABLES --- **/
@@ -6,6 +7,7 @@ var ctx = canvas.getContext("2d");
 var mouseX = 0;
 var mouseY = 0;
 var keys = [];
+var translateKey = undefined;
 
 /** --- CANVAS INITIALIZATION --- **/
 canvas.width = 800;
@@ -14,6 +16,14 @@ ctx.clearRect(0, 0, canvas.width, canvas.height);
 
 /** --- GAME VARIABLES --- **/
 var rooms = [[[-150, -100], [0, -200], [150, -100], [150, 100], [-150, 100], "rgb(100, 100, 100)"]];
+var shapes = [];
+var onlyPolygons = false;
+
+var POLYGON_POINTS = [[new Point(-150, -100), new Point(-150, -120), new Point(0, -220), new Point(0, -200)]];
+var POLYGON_STROKE_STYLES = ["rgb(150, 150, 255)", "rgb(150, 150, 255)"];
+var POLYGON_FILL_STYLES = ["rgba(255, 255, 255, 0.0)", "rgba(255, 255, 255, 0.0)"];
+
+var velocity = new Vector(new Point(350, 190));
 
 /** --- UTILITY FUNCTIONS --- **/
 var getMousePos = function(e) {
@@ -24,202 +34,13 @@ var getMousePos = function(e) {
     };
 };
 
-/** --- VECTOR HANDLING --- **/
-var Vector = function(x, y) {
-    this.x = x;
-    this.y = y;
-};
-Vector.prototype = {
-    getMagnitude: function() {
-        return Math.sqrt(Math.pow((this.x, 2), (this.y, 2)));
-    },
-    add: function(vector) {
-        var v = new Vector();
-        v.x = this.x + vector.x;
-        v.y = this.y + vector.y;
-        return v;
-    },
-    subtract: function(vector) {
-        var v = new Vector();
-        v.x = this.x - vector.x;
-        v.y = this.y - vector.y;
-        return v;
-    },
-    dotProduct: function(vector) {
-        return this.x * vector.x +
-               this.y * vector.y;
-    },
-    edge: function(vector) {
-        return this.subtract(vector);
-    },
-    perpendicular: function() {
-        var v = new Vector();
-        v.x = this.y;
-        v.y = 0 - this.x;
-        return v;
-    },
-    normalize: function() {
-        var v = new Vector(0, 0);
-        var m = this.getMagnitude();
-
-        if(m !== 0) {
-            v.x = this.x / m;
-            v.y = this.y / m;
-        }
-        return v;
-    },
-    normal: function() {
-        var p = this.perpendicular();
-        return p.normalize();
-    }
-};
-
-/** --- PROJECTION HANDLING --- **/
-var Projection = function(min, max) {
-    this.min = min;
-    this.max = max;
-};
-Projection.prototype.overlaps = function(projection) {
-    return this.max > projection.min && projection.max > this.min;
-};
-
-/** --- SHAPE HANDLING --- **/
-var Shape = function() {
-    this.x = undefined;
-    this.y = undefined;
-    this.strokeStyle = "rgba(255, 253, 208, 0.9)";
-    this.fillStyle = "rgba(147, 197, 114, 0.8)";
-};
-Shape.prototype = {
-    collidesWith: function(shape) {
-        var axes = this.getAxes().concat(shape.getAxes());
-        return !this.separationOnAxes(axes, shape);
-    },
-    separationOnAxes: function(axes, shape) {
-        for(var i = 0; i < axes.length; i++) {
-            var axis = axes[i];
-            var projection1 = shape.project(axis);
-            var projection2 = this.project(axis);
-
-            if(!projection1.overlaps(projection2)) {
-                return true;
-            }
-        }
-        return false;
-    },
-    project: function() {
-        throw "project(axis) not implemented";
-    },
-    getAxes: function() {
-        throw "getAxes() not implemented";
-    },
-    move: function(dx, dy) {
-        throw "move(dx, dy) not implemented";
-    },
-    createPath: function(context) {
-        throw "createPath(ctx) not implemented";
-    },
-    fill: function(ctx) {
-        ctx.save();
-        ctx.fillStyle = this.fillStyle;
-        this.createPath(ctx);
-        ctx.fill();
-        ctx.restore();
-    },
-    stroke: function(ctx) {
-        ctx.save();
-        ctx.strokeStyle = this.strokeStyle;
-        this.createPath(ctx);
-        ctx.stroke();
-        ctx.restore();
-    },
-    isPointInPath: function(ctx, x, y) {
-        this.createPath(ctx);
-        return ctx.isPointInPath(x, y);
-    }
-};
-
-/** --- POINT HANDLING --- **/
-var Point = function(x, y) {
-    this.x = x;
-    this.y = y;
-};
-
-/** --- POLYGON HANDLING --- **/
-var Polygon = function() {
-    this.points = [];
-    this.strokeStyle = "blue";
-    this.fillStyle = "white";
-};
-Polygon.prototype = new Shape();
-Polygon.prototype.getAxes = function() {
-    var v1 = new Vector();
-    var v2 = new Vector();
-    var axes = [];
-
-    for(var i = 0; i < this.points.length - 1; i++) {
-        v1.x = this.points[i].x;
-        v1.y = this.points[i].y;
-
-        v2.x = this.points[i + 1].x;
-        v2.y = this.points[i + 1].y;
-
-        axes.push(v1.edge(v2).normal());
-    }
-
-    v1.x = this.points[this.points.length - 1].x;
-    v1.y = this.points[this.points.length - 1].y;
-
-    v2.x = this.points[0].x;
-    v2.y = this.points[0].y;
-
-    axes.push(v1.edge(v2).normal());
-
-    return axes;
-};
-Polygon.prototype.project = function() {
-    var scalars = [];
-    var v = new Vector();
-
-    this.points.forEach(function(point) {
-        v.x = point.x;
-        v.y = point.y;
-        scalars.push(v.dotProduct(axis));
-    });
-
-    return new Projection(Math.min.apply(Math, scalars),
-                          Math.max.apply(Math, scalars));
-};
-Polygon.prototype.addPoint = function(x, y) {
-    this.points.push(new Point(x, y));
-};
-Polygon.prototype.createPath = function(ctx) {
-    if(this.points.length === 0) {
-        return;
-    }
-
-    ctx.beginPath();
-    ctx.moveTo(this.points[0].x,
-               this.points[0].y);
-
-    for(var i = 0; i < this.points.length; i++) {
-        ctx.lineTo(this.points[i].x,
-                   this.points[i].y);
-    }
-
-    ctx.closePath();
-};
-Polygon.prototype.move = function(dx, dy) {
-    for(var i = 0; i < this.points.length; i++) {
-        var point = this.points[i];
-        point.x += dx;
-        point.y += dy;
-    }
-};
-
 /** --- MAP HANDLING --- **/
 var Map = function() {
+    this.velocity = { x: 0, y: 0 };
+    this.lastVelocity = { x:0, y: 0 };
+    this.lastRotation = 0;
     this.rotation = 0;
+    this.lastTranslation = 0;
     this.translation = 0;
 };
 Map.prototype.update = function() {
@@ -228,20 +49,70 @@ Map.prototype.update = function() {
             var x = rooms[i][j][0];
             var y = rooms[i][j][1] + this.translation;
             rooms[i][j][0] = x * Math.cos(this.rotation) - y * Math.sin(this.rotation);
-            rooms[i][j][1] = x * Math.sin(this.rotation) + y * Math.cos(this.rotation) - this.translation;
+            rooms[i][j][1] = x * Math.sin(this.rotation) + y * Math.cos(this.rotation);
+        }
+    }
+    for(var i = 0; i < shapes.length; i++) {
+        for(var j = 0; j < shapes[i].points.length; j++) {
+            var point = shapes[i].points[j];
+            var x = point.x;
+            var y = point.y + this.translation;
+            point.x = x * Math.cos(this.rotation) - y * Math.sin(this.rotation);
+            point.y = x * Math.sin(this.rotation) + y * Math.cos(this.rotation);
         }
     }
 };
+Map.prototype.separate = function(mtv) {
+    var dx, dy, velocityMagnitude, point;
+
+    if(mtv.axis === undefined) {
+        point = new Point();
+        velocityMagnitude = Math.sqrt(Math.pow(this.velocity.x, 2) +
+            Math.pow(this.velocity.y, 2));
+
+        point.x = this.velocity.x / velocityMagnitude;
+        point.y = this.velocity.y / velocityMagnitude;
+
+        mtv.axis = new Vector(point);
+    }
+
+    dy = mtv.axis.y * mtv.overlap;
+    dx = mtv.axis.x * mtv.overlap;
+
+    if((dx < 0 && this.velocity.x < 0) ||
+        (dx > 0 && this.velocity.x > 0)) {
+        dx = -dx;
+    }
+
+    if((dy < 0 && this.velocity.y < 0) ||
+        (dy > 0 && this.velocity.y > 0)) {
+        dy = -dy;
+    }
+    this.move(dx, dy);
+};
+Map.prototype.move = function(dx, dy) {
+    this.lastVelocity = this.velocity;
+    this.velocity.x += dx;
+    this.velocity.y += dy;
+    this.lastTranslation = this.translation;
+    this.translation += dy;
+};
 Map.prototype.draw = function() {
-    ctx.translate(0, this.translation);
-    for(var i = 0; i < rooms.length; i++) {
-        ctx.fillStyle = rooms[i][rooms[i].length - 1];
-        ctx.beginPath();
+    if(!onlyPolygons) {
+        for (var i = 0; i < rooms.length; i++) {
+            ctx.fillStyle = rooms[i][rooms[i].length - 1];
+            ctx.beginPath();
             for (var j = 0; j < rooms[i].length - 1; j++) {
                 ctx.lineTo(rooms[i][j][0], rooms[i][j][1]);
             }
-        ctx.closePath();
-        ctx.fill();
+            ctx.closePath();
+            ctx.fill();
+        }
+    } else {
+        shapes.forEach(function(shape) {
+            shape.stroke(ctx);
+            shape.fill(ctx);
+        });
     }
 };
 var map = new Map();
@@ -251,37 +122,69 @@ var Player = function(r) {
     this.r = r;
     this.MOVEMENT_SPEED = 4;
     this.ROTATION_SPEED = 0.05;
+    this.POLY = new Polygon();
+    this.POLY.points = [new Point(0, -40), new Point(-20, 0), new Point(-15, 15), new Point(0, 20), new Point(15, 15), new Point(20, 0)];
 };
 Player.prototype.update = function() {
-    if(keys["ArrowUp"]) {
-        map.translation += this.MOVEMENT_SPEED;
+    if(keys["ArrowUp"] && !keys["ArrowDown"]) {
+        map.lastVelocity.y = map.velocity.y;
+        map.velocity.y += this.MOVEMENT_SPEED;
+        map.lastTranslation = this.MOVEMENT_SPEED;
+        map.translation = this.MOVEMENT_SPEED;
     }
-    if(keys["ArrowDown"]) {
-        map.translation -= this.MOVEMENT_SPEED;
+    if(keys["ArrowDown"] && !keys["ArrowUp"]) {
+        map.lastVelocity.y = map.velocity.y;
+        map.velocity.y -= this.MOVEMENT_SPEED;
+        map.lastTranslation = -this.MOVEMENT_SPEED;
+        map.translation = -this.MOVEMENT_SPEED;
+    }
+    if(!keys["ArrowUp"] && !keys["ArrowDown"]) {
+        map.lastTranslation = map.translation;
+        map.translation = 0;
     }
     if(keys["ArrowLeft"]) {
+        map.lastRotation = this.ROTATION_SPEED;
         map.rotation = this.ROTATION_SPEED;
     } else if(keys["ArrowRight"]) {
+        map.lastRotation = -this.ROTATION_SPEED;
         map.rotation = -this.ROTATION_SPEED;
     } else {
+        map.lastRotation = map.rotation;
         map.rotation = 0;
     }
+    console.log("velocity: %d, lastVelocity: %d", map.velocity.y, map.lastVelocity.y);
 };
 Player.prototype.draw = function() {
-    ctx.fillStyle = "rgb(255, 0, 0)";
-    ctx.beginPath();
-        ctx.moveTo(canvas.width / 2 + this.r, canvas.height / 2);
-        ctx.lineTo(canvas.width / 2, canvas.height / 2 - this.r * 2);
-        ctx.lineTo(canvas.width / 2 - this.r, canvas.height / 2);
-        ctx.arc(canvas.width / 2, canvas.height / 2, this.r, 0, Math.PI, false);
+    if (!onlyPolygons) {
+        ctx.fillStyle = "rgb(255, 0, 0)";
+        ctx.beginPath();
+        ctx.moveTo(this.r, 0);
+        ctx.lineTo(0, -this.r * 2);
+        ctx.lineTo(-this.r, 0);
+        ctx.arc(0, 0, this.r, 0, Math.PI, false);
         ctx.closePath();
-    ctx.fill();
+        ctx.fill();
+    } else {
+        this.POLY.stroke(ctx);
+    }
 };
 var player = new Player(20);
 
-var POLYGON_POINTS = [[new Point(250, 150), new Point(250, 250), new Point(350, 250)],
-                      [new Point(100, 100), new Point(100, 150), new Point(150, 150), new Point(150, 100)],
-                      [new Point(400, 100), new Point(380, 150), new Point(500, 150), new Point(520, 100)]];
+var collisionDetected = function(mtv) {
+    return mtv.axis !== undefined || mtv.overlap !== 0;
+};
+var handleShapeCollisions = function() {
+    shapes.forEach(function(shape) {
+        var mtv = player.POLY.collidesWith(shape);
+        if(collisionDetected(mtv)) {
+            console.log("Collision!");
+            map.separate(mtv);
+        }
+    });
+};
+var detectCollisions = function() {
+    handleShapeCollisions();
+};
 
 /** --- GAME HANDLING --- **/
 var Game = {
@@ -313,35 +216,41 @@ var Game = {
     player: function() {
         player.update();
         player.draw();
+    },
+    setup: function() {
+        for(var i = 0; i < POLYGON_POINTS.length; i++) {
+            var polygon = new Polygon();
+            var points = POLYGON_POINTS[i];
+
+            polygon.strokeStyle = POLYGON_STROKE_STYLES[i];
+            polygon.fillStyle = POLYGON_FILL_STYLES[i];
+
+            points.forEach(function(point) {
+                polygon.addPoint(point.x, point.y);
+            });
+
+            shapes.push(polygon);
+        }
+        this.draw();
+    },
+    draw: function() {
+        detectCollisions();
+        Game.background();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        Game.map();
+        Game.player();
+
+        // Reset Transformation Matrix
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+        window.requestAnimationFrame(Game.draw);
     }
 };
 
 /** --- GAME INITIALIZATION --- **/
-var draw = function() {
-    Game.background();
-    ctx.translate(canvas.width / 2, canvas.height / 2);
-    Game.map();
-    // Reset Transformation Matrix
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    for(var i = 0; i < POLYGON_POINTS.length; i++) {
-        var p = new Polygon();
-        for(var j = 0; j < POLYGON_POINTS[i].length; j++) {
-            p.addPoint(POLYGON_POINTS[i][j].x, POLYGON_POINTS[i][j].y);
-        }
-        p.stroke(ctx);
-    }
-    Game.player();
-
-    window.requestAnimationFrame(draw);
-};
-draw();
+Game.setup();
 
 /** --- EVENT LISTENERS --- **/
-canvas.addEventListener("mousemove", function(e) {
-    var mousePos = getMousePos(e);
-    mouseX = mousePos.x;
-    mouseY = mousePos.y;
-});
 canvas.addEventListener("keydown", function(e) {
     keys[e.key] = true;
     e.preventDefault();
@@ -349,4 +258,8 @@ canvas.addEventListener("keydown", function(e) {
 canvas.addEventListener("keyup", function(e) {
     keys[e.key] = false;
     e.preventDefault();
+});
+
+$("#onlyPolygons").on("change", function() {
+    onlyPolygons = !onlyPolygons;
 });
